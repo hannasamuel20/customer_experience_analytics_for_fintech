@@ -1,0 +1,12 @@
+2025-06-08 15:48:30,398 - INFO - Fetching reviews
+2025-06-08 15:48:32,285 - ERROR - Error occurred: DictWriter.writeheader() takes 1 positional argument but 2 were given
+2025-06-08 15:49:10,438 - INFO - Fetching reviews
+2025-06-08 15:49:11,735 - INFO - Saved449 reviews to Dashen_reviews_20250608_154911.csv
+2025-06-08 16:11:33,946 - INFO - Fetching reviews
+2025-06-08 16:11:33,967 - INFO - Saved0 reviews to data/CBE_20250608_161133.csv
+2025-06-08 16:12:53,328 - INFO - Fetching reviews
+2025-06-08 16:12:53,335 - INFO - Saved0 reviews to data/CBE_20250608_161253.csv
+2025-06-08 16:13:55,360 - INFO - Fetching reviews
+2025-06-08 16:13:57,226 - INFO - Saved1000 reviews to data/CBE_20250608_161357.csv
+2025-06-08 16:18:39,920 - INFO - Fetching reviews
+2025-06-08 16:18:41,798 - INFO - Saved1000 reviews to data/BOA_20250608_161841.csv
