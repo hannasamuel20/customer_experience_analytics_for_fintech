@@ -51,16 +51,16 @@ class ThematicAnalysis:
     
     
     def apply_preprocessing(self):
-        self.df['tokens'] = self.df['review_text'].astype(str).apply(self.preprocess_text)
+        self.df['tokens'] = self.df['review_clean'].astype(str).apply(self.preprocess_text)
         
     def apply_keyword_extraction(self):
-        self.df["keywords"] = self.df["review_text"].apply(self.extract_keywords)
+        self.df["keywords"] = self.df["review_clean"].apply(self.extract_keywords)
 
     def apply_theme_assignment(self):
         self.df['themes'] = self.df['tokens'].apply(self.assign_themes)
     
     def save_as_csv(self):
-        self.df[['review_text','rating', 'sentiment_label', 'sentiment_score', 'themes','sentiment','scaled_sentiment']].to_csv("../data/thematic_analysis_results.csv", index=False)
+        self.df[['review_clean','rating', 'sentiment_label', 'sentiment_score', 'themes','sentiment','scaled_sentiment']].to_csv("../data/thematic_analysis_results.csv", index=False)
 
     def plot_themes_frequency_per_bank(self):
 
@@ -108,4 +108,23 @@ class ThematicAnalysis:
         plt.legend(title='Bank', bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
         plt.show()
+
+    def plot_average_sentiment_by_theme(self):
+        df_exploded = self.df.explode('themes')
+        plt.figure(figsize=(12, 6))
+        sns.barplot(
+            data=df_exploded,
+            x='themes',
+            y='scaled_sentiment',
+            hue='bank_name',
+            ci=None
+        )
+        plt.xticks(rotation=45)
+        plt.title('Average Sentiment Score per Theme (by Bank)')
+        plt.xlabel('Theme')
+        plt.ylabel('Avg Sentiment Score')
+        plt.legend(title='Bank')
+        plt.tight_layout()
+        plt.show()
+
 

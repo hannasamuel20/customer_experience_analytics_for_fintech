@@ -4,6 +4,7 @@ from langdetect import detect
 import emoji
 import matplotlib.pyplot as plt
 import re
+import seaborn as sns
 
 from transformers import pipeline
 from tqdm import tqdm
@@ -77,3 +78,5 @@ class SentimentAnalysis:
             plt.grid(axis='y', linestyle='--', alpha=0.7)
             plt.tight_layout()
             plt.show()
+
+
