@@ -3,54 +3,28 @@ import pandas as pd
 from langdetect import detect
 import emoji
 import matplotlib.pyplot as plt
-import spacy
 import re
+import seaborn as sns
 
-# Load English language model
-nlp = spacy.load("en_core_web_sm")
-THEME_KEYWORDS = {
-    "Account Access Issues": ["login", "password", "account lock", "access denied"],
-    "Transaction Performance": ["transfer slow", "transaction failed", "delay"],
-    "User Interface": ["app crash", "interface", "navigation", "design"],
-    "Customer Support": ["support", "agent", "response time", "service"],
-    "Feature Requests": ["feature", "request", "add", "should have"]
-}
+from transformers import pipeline
+from tqdm import tqdm
+tqdm.pandas() 
+
+
+# Load sentiment-analysis pipeline with DistilBERT
+
+
 
 class SentimentAnalysis:
     def __init__(self,df):
         self.df = df
+        self.sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert/distilbert-base-uncased-finetuned-sst-2-english")
         # self.convert_datetime()
 
     
     def remove_amharic_rows(self):
         self.df = self.df[self.df['language'] == 'en']
-    
-    def preprocess_text(text):
-        doc = nlp(text)
-        tokens = [
-            token.lemma_.lower()
-            for token in doc
-            if not token.is_stop 
-            and not token.is_punct 
-            and token.pos_ in ["NOUN", "VERB", "ADJ"]
-        ]
-        return " ".join(tokens)
-    
-    # Keyword extraction function
-    def extract_keywords(text):
-        doc = nlp(text)
-        keywords = [
-            chunk.text.lower() 
-            for chunk in doc.noun_chunks
-            if len(chunk.text.split()) <= 3  # Include 1-3 word phrases
-        ]
-        return list(set(keywords))
-    
-    def apply_preprocessing(self):
-        self.df['processed_review'] = self.df['review'].astype(str).apply(preprocess_text)
-        
-    def apply_keyword_extraction(self):
-        self.df["keywords"] = self.df["review_text"].apply(extract_keywords)
+
 
     def emoji_to_text(self):
         def convert_emoji_to_text(text):
@@ -61,23 +35,48 @@ class SentimentAnalysis:
     def convert_datetime(self):
         self.df['date'] = pd.to_datetime(self.df['date'])
 
-    def sentiment_analysis(self):
+    def sentiment_analysis_text_blob(self):
         def get_sentiment(text):
             polarity = TextBlob(text).sentiment.polarity
             return polarity
 
         # Apply the function to the headline column
         self.df['sentiment'] = self.df['review_text'].apply(get_sentiment)
+    
+    def sentiment_analysis_distilbert(self):
+        
+        def get_sentiment_label_score(text):
+            try:
+                result = self.sentiment_pipeline(text[:512])[0]  # Truncate to 512 tokens
+                return pd.Series([result['label'], result['score']])
+            except:
+                return pd.Series([None, None])
+
+        # Apply to all reviews
+        self.df[['sentiment_label', 'sentiment_score']] = self.df['review_text'].progress_apply(get_sentiment_label_score)
+        # Map labels to numeric values
+        self.df['sentiment_value'] = self.df['sentiment_label'].map({'POSITIVE': 1, 'NEGATIVE': -1})
+
+        # Multiply to get scaled sentiment score
+        self.df['scaled_sentiment'] = self.df['sentiment_value'] * self.df['sentiment_score']
+
 
     def plot_sentiment_by_rating(self):
-        # Group by rating and calculate mean sentiment
-        mean_sentiment_per_rating = self.df.groupby('rating')['sentiment'].mean().reset_index()
-        plt.figure(figsize=(8, 5))
-        plt.bar(mean_sentiment_per_rating['rating'], mean_sentiment_per_rating['sentiment'], color='skyblue')
-        plt.xlabel('Rating')
-        plt.ylabel('Average Sentiment Score')
-        plt.title('Average Sentiment Score per Rating')
-        plt.xticks(mean_sentiment_per_rating['rating'])  # Show all rating values
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.tight_layout()
-        plt.show()
+        banks = self.df['bank_name'].unique()
+
+        
+        for bank in banks:
+            bank_df = self.df[self.df['bank_name'] == bank]
+            mean_sentiment_per_rating = bank_df.groupby('rating')['scaled_sentiment'].mean().reset_index()
+
+            plt.figure(figsize=(8, 5))
+            plt.bar(mean_sentiment_per_rating['rating'], mean_sentiment_per_rating['scaled_sentiment'], color='skyblue')
+            plt.xlabel('Rating')
+            plt.ylabel('Average Sentiment Score')
+            plt.title(f'Average Sentiment Score per Rating - {bank}')
+            plt.xticks(mean_sentiment_per_rating['rating'])  # Show all rating values
+            plt.grid(axis='y', linestyle='--', alpha=0.7)
+            plt.tight_layout()
+            plt.show()
+
+
