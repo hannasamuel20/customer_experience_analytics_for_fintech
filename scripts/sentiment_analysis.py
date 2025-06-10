@@ -18,6 +18,7 @@ tqdm.pandas()
 class SentimentAnalysis:
     def __init__(self,df):
         self.df = df
+        self.convert_datetime()
         self.sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert/distilbert-base-uncased-finetuned-sst-2-english")
         # self.convert_datetime()
 
@@ -78,5 +79,46 @@ class SentimentAnalysis:
             plt.grid(axis='y', linestyle='--', alpha=0.7)
             plt.tight_layout()
             plt.show()
+
+    def plot_sentiment_trend(self):
+        self.df['date_month'] = self.df['date'].dt.to_period('M').dt.to_timestamp()
+
+        banks = self.df['bank_name'].unique()
+
+        # Create subplots for sentiment trends
+        fig, axes = plt.subplots(1, len(banks), figsize=(18, 5), sharey=True)
+        fig.suptitle('Sentiment Trends Over Time', fontsize=16)
+
+        for i, bank in enumerate(banks):
+            bank_data = self.df[self.df['bank_name'] == bank]
+            sentiment_trend = (
+                bank_data.groupby('date_month')['scaled_sentiment']
+                .mean()
+                .reset_index()
+            )
+            axes[i].plot(sentiment_trend['date_month'], sentiment_trend['scaled_sentiment'], marker='o', color='teal')
+            axes[i].set_title(f'{bank}')
+            axes[i].set_xlabel('Month')
+            axes[i].tick_params(axis='x', rotation=45)
+
+        axes[0].set_ylabel('Average Sentiment Score')
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.show()
+
+
+    def plot_rating_distribution_plot(self):
+        banks = self.df['bank_name'].unique()
+        fig, axes = plt.subplots(1, len(banks), figsize=(18, 5), sharey=True)
+        fig.suptitle('Rating Distribution per Bank', fontsize=16)
+
+        for i, bank in enumerate(banks):
+            bank_data = self.df[self.df['bank_name'] == bank]
+            sns.countplot(data=bank_data, x='rating', ax=axes[i], palette='Blues')
+            axes[i].set_title(f'{bank}')
+            axes[i].set_xlabel('Rating')
+
+        axes[0].set_ylabel('Number of Reviews')
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.show()
 
 
